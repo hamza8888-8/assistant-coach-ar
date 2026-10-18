@@ -60,3 +60,17 @@ class TestSquatAnalyzer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_counts_two_consecutive_squats(self):
+        analyzer = SquatAnalyzer()
+
+        angles = [
+            175, 130, 95, 165,  # Squat 1
+            175, 130, 95, 165,  # Squat 2
+        ]
+
+        for angle in angles:
+            reps, state = analyzer.update(angle)
+
+        self.assertEqual(reps, 2)
+        self.assertEqual(analyzer.state, "standing")
