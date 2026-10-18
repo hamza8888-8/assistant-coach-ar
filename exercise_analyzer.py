@@ -33,3 +33,46 @@ if __name__ == "__main__":
 
     angle = calculate_angle(hip, knee, ankle)
     print(f"Knee angle: {angle:.1f} degrees")
+
+
+
+class SquatAnalyzer:
+    """A simple state machine for counting squat repetitions."""
+
+    def __init__(self):
+        self.reps = 0
+        self.state = "standing"
+
+    def update(self, knee_angle):
+        if knee_angle is None:
+            return self.reps, "Landmark unavailable"
+
+        if self.state == "standing":
+            if knee_angle < 140:
+                self.state = "descending"
+            return self.reps, self.state
+
+        if self.state == "descending":
+            if knee_angle < 100:
+                self.state = "bottom"
+            elif knee_angle > 160:
+                self.state = "standing"
+            return self.reps, self.state
+
+        if self.state == "bottom":
+            if knee_angle > 160:
+                self.reps += 1
+                self.state = "standing"
+                return self.reps, "Rep completed"
+            return self.reps, self.state
+
+
+if __name__ == "__main__":
+    analyzer = SquatAnalyzer()
+
+    # Simulated knee angles: standing, descending, bottom, standing
+    test_angles = [175, 130, 95, 120, 165, 175]
+
+    for angle in test_angles:
+        reps, state = analyzer.update(angle)
+        print(f"Angle: {angle} | Reps: {reps} | State: {state}")
