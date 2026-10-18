@@ -6,11 +6,16 @@ from exercise_analyzer import SquatAnalyzer
 
 class TestSquatAnalyzer(unittest.TestCase):
 
+
     def test_complete_squat_counts_one_rep(self):
         analyzer = SquatAnalyzer()
 
         for angle in [175, 130, 95, 120, 165]:
-            reps, _ = analyzer.update(angle)
+            reps, state = analyzer.update(angle)
+            print(
+                f"Angle: {angle}, Reps: {reps}, State: {state}",
+                flush=True,
+            )
 
         self.assertEqual(reps, 1)
 
@@ -18,7 +23,7 @@ class TestSquatAnalyzer(unittest.TestCase):
         analyzer = SquatAnalyzer()
 
         for angle in [175, 130, 120, 165]:
-            reps, _ = analyzer.update(angle)
+            reps, state = analyzer.update(angle)
 
         self.assertEqual(reps, 0)
 
@@ -57,9 +62,30 @@ class TestSquatAnalyzer(unittest.TestCase):
         self.assertEqual(analyzer.reps, 0)
         self.assertEqual(analyzer.state, "standing")
 
+    def test_update_from_landmarks_handles_missing_point(self):
+        analyzer = SquatAnalyzer()
 
-if __name__ == "__main__":
-    unittest.main()
+        reps, message = analyzer.update_from_landmarks(
+            hip=(0, 0),
+            knee=None,
+            ankle=(1, 1),
+        )
+
+        self.assertEqual(reps, 0)
+        self.assertEqual(message, "Landmark unavailable")
+        self.assertEqual(analyzer.state, "standing")
+
+    def test_update_from_landmarks_calculates_angle(self):
+        analyzer = SquatAnalyzer()
+
+        reps, state = analyzer.update_from_landmarks(
+            hip=(0, 1),
+            knee=(0, 0),
+            ankle=(1, 0),
+        )
+
+        self.assertEqual(reps, 0)
+        self.assertEqual(state, "descending")
 
     def test_counts_two_consecutive_squats(self):
         analyzer = SquatAnalyzer()
@@ -74,3 +100,35 @@ if __name__ == "__main__":
 
         self.assertEqual(reps, 2)
         self.assertEqual(analyzer.state, "standing")
+    
+    def test_feedback_for_squat_depth(self):
+        analyzer = SquatAnalyzer()
+
+        self.assertEqual(
+            analyzer.get_feedback(90),
+            "Target squat depth reached",
+        )
+
+        self.assertEqual(
+            analyzer.get_feedback(120),
+            "Bend your knees a little more",
+        )
+
+    def test_feedback_handles_invalid_measurements(self):
+        analyzer = SquatAnalyzer()
+
+        self.assertEqual(
+            analyzer.get_feedback(None),
+            "Cannot assess: knee landmark unavailable",
+        )
+
+        self.assertEqual(
+            analyzer.get_feedback(200),
+            "Cannot assess: invalid knee angle",
+        )
+    
+
+
+
+if __name__ == "__main__":
+    unittest.main()

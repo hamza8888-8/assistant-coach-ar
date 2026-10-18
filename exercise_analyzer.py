@@ -1,12 +1,15 @@
 
 import numpy as np
+from angle_smoother import AngleSmoother
 
 
 def calculate_angle(a, b, c):
     """
     Calculate angle ABC in degrees.
+
     Each point is an (x, y) or (x, y, z) coordinate.
     Point b is the joint being measured.
+    Returns None if the angle cannot be calculated.
     """
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
@@ -33,11 +36,13 @@ class SquatAnalyzer:
     def __init__(self):
         self.reps = 0
         self.state = "standing"
+        self.smoother = AngleSmoother(window_size=2)
 
     def reset(self):
-        """Reset the repetition count and movement state."""
+        """Reset repetitions, movement state, and smoothing history."""
         self.reps = 0
         self.state = "standing"
+        self.smoother.reset()
 
     def update(self, knee_angle):
         """
@@ -50,9 +55,15 @@ class SquatAnalyzer:
         if knee_angle is None:
             return self.reps, "Landmark unavailable"
 
-        # Reject angles outside the valid range.
-        if not 0 <= knee_angle <= 180:
+        # Reject invalid angles.
+        if not isinstance(knee_angle, (int, float, np.number)):
             return self.reps, "Invalid knee angle"
+
+        if not np.isfinite(knee_angle) or not 0 <= knee_angle <= 180:
+            return self.reps, "Invalid knee angle"
+
+        # Direct angle inputs are processed without smoothing.
+        # This keeps the state machine predictable and testable.
 
         # Standing -> descending.
         if self.state == "standing":
@@ -86,7 +97,7 @@ class SquatAnalyzer:
     def update_from_landmarks(self, hip, knee, ankle):
         """
         Calculate the knee angle from hip, knee, and ankle coordinates,
-        then update the squat analyzer.
+        smooth the measurement, and update the squat analyzer.
         """
         if hip is None or knee is None or ankle is None:
             return self.reps, "Landmark unavailable"
@@ -99,14 +110,40 @@ class SquatAnalyzer:
         if knee_angle is None:
             return self.reps, "Landmark unavailable"
 
-        return self.update(knee_angle)
+        # Smooth only angles calculated from landmarks.
+        smoothed_angle = self.smoother.update(knee_angle)
+
+        if smoothed_angle is None:
+            return self.reps, "Landmark unavailable"
+
+        return self.update(smoothed_angle)
+
+    def get_feedback(self, knee_angle):
+        """Return simple feedback about squat depth."""
+        if knee_angle is None:
+            return "Cannot assess: knee landmark unavailable"
+
+        if not isinstance(knee_angle, (int, float, np.number)):
+            return "Cannot assess: invalid knee angle"
+
+        if not np.isfinite(knee_angle) or not 0 <= knee_angle <= 180:
+            return "Cannot assess: invalid knee angle"
+
+        if knee_angle < 100:
+            return "Target squat depth reached"
+
+        if knee_angle < 140:
+            return "Bend your knees a little more"
+
+        return "Stand upright or begin your squat"
 
 
 if __name__ == "__main__":
     # Standalone demonstration using simulated angles.
     analyzer = SquatAnalyzer()
+    test_angles = [175, 130, 95, 120, 165]
 
-    test_angles = [175, 130, 95, 120, 165, 175]
+    print("Testing direct angle analysis:")
 
     for angle in test_angles:
         reps, state = analyzer.update(angle)
@@ -122,5 +159,4 @@ if __name__ == "__main__":
     ankle = (1, 0)
 
     reps, state = analyzer.update_from_landmarks(hip, knee, ankle)
-
     print(f"Reps: {reps} | State: {state}")
