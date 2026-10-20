@@ -188,4 +188,33 @@ def draw_overlay(frame, landmarks=None, results=None):
     )
 
     return annotated
+    
+def draw_pipeline_overlay(frame, landmarks, pipeline_result):
+    """Draw an integration pipeline result over a video frame.
+
+    Args:
+        frame: OpenCV BGR image.
+        landmarks: Named landmark coordinates in pixel positions.
+        pipeline_result: Dictionary returned by process_metrics().
+
+    Returns:
+        A new annotated frame.
+    """
+    if not isinstance(pipeline_result, Mapping):
+        pipeline_result = {}
+
+    metrics = pipeline_result.get("metrics", {})
+    feedback = pipeline_result.get("feedback", {})
+
+    if not isinstance(metrics, Mapping):
+        metrics = {}
+
+    if not isinstance(feedback, Mapping):
+        feedback = {}
+
+    results = dict(metrics)
+    results["feedback"] = feedback
+
+    return draw_overlay(frame, landmarks, results)
+
 
