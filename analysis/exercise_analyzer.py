@@ -1,6 +1,6 @@
 
 import numpy as np
-from angle_smoother import AngleSmoother
+from .angle_smoother import AngleSmoother
 
 
 def calculate_angle(a, b, c):
@@ -160,3 +160,4 @@ if __name__ == "__main__":
 
     reps, state = analyzer.update_from_landmarks(hip, knee, ankle)
     print(f"Reps: {reps} | State: {state}")
+
