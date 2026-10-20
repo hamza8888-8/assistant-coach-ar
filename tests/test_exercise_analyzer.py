@@ -1,7 +1,7 @@
 
 import unittest
 
-from exercise_analyzer import SquatAnalyzer
+from analysis.exercise_analyzer import SquatAnalyzer
 
 
 class TestSquatAnalyzer(unittest.TestCase):

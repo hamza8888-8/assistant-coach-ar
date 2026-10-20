@@ -1,7 +1,7 @@
 
 import unittest
 
-from angle_smoother import AngleSmoother
+from analysis.angle_smoother import AngleSmoother
 
 
 class TestAngleSmoother(unittest.TestCase):
