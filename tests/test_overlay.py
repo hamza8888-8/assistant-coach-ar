@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from ar.overlay import draw_overlay
+from ar.overlay import draw_pipeline_overlay
 
 
 @pytest.fixture
@@ -87,3 +88,28 @@ def test_rejects_non_array_frame():
 def test_rejects_invalid_frame_shape(invalid_frame):
     with pytest.raises(ValueError):
         draw_overlay(invalid_frame)
+def test_draw_pipeline_overlay_accepts_pipeline_result(frame):
+    original = frame.copy()
+
+    result = draw_pipeline_overlay(
+        frame,
+        {
+            "left_shoulder": (200, 100),
+            "left_elbow": (170, 180),
+        },
+        {
+            "metrics": {
+                "knee_angle": 90.0,
+                "reps": 3,
+                "state": "bottom",
+            },
+            "feedback": {
+                "message": "Keep going!",
+                "status": "good",
+            },
+        },
+    )
+
+    assert result.shape == frame.shape
+    assert not np.array_equal(result, original)
+    assert np.array_equal(frame, original)
