@@ -158,8 +158,13 @@ def draw_overlay(frame, landmarks=None, results=None):
     else:
         reps_text = "Reps: --"
 
+    state = results.get("state", "unknown")
+    if isinstance(state, str) and state.strip():
+        state_text = f"State: {state.capitalize()}"
+    else:
+        state_text = "State: Unknown"
     # Use a filled panel so text remains readable over changing backgrounds.
-    panel_height = min(112, height)
+    panel_height = min(140, height)
     panel_width = min(width, max(320, int(width * 0.55)))
     cv2.rectangle(
         annotated, (0, 0), (panel_width - 1, panel_height - 1),
@@ -171,23 +176,29 @@ def draw_overlay(frame, landmarks=None, results=None):
     thickness = 2 if width >= 640 else 1
 
     cv2.putText(
-        annotated, angle_text, (12, 27), font, scale,
+        annotated, angle_text, (12, 25), font, scale,
         (255, 255, 255), thickness, cv2.LINE_AA,
     )
     cv2.putText(
-        annotated, reps_text, (12, 54), font, scale,
+        annotated, reps_text, (12, 50), font, scale,
         (255, 255, 255), thickness, cv2.LINE_AA,
     )
-    cv2.circle(annotated, (17, 78), 6, color, -1)
+    cv2.putText(
+        annotated, state_text, (12, 75), font, scale,
+        (255, 255, 255), thickness, cv2.LINE_AA,
+    )
+
+    cv2.circle(annotated, (17, 103), 6, color, -1)
 
     max_chars = max(12, int((panel_width - 38) / (11 * scale)))
     display_message = message[:max_chars]
     cv2.putText(
-        annotated, display_message, (30, 83), font, scale,
+        annotated, display_message, (30, 108), font, scale,
         color, thickness, cv2.LINE_AA,
     )
 
     return annotated
+
     
 def draw_pipeline_overlay(frame, landmarks, pipeline_result):
     """Draw an integration pipeline result over a video frame.
@@ -216,5 +227,3 @@ def draw_pipeline_overlay(frame, landmarks, pipeline_result):
     results["feedback"] = feedback
 
     return draw_overlay(frame, landmarks, results)
-
-
