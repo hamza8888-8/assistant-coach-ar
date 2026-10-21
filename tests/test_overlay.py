@@ -113,3 +113,17 @@ def test_draw_pipeline_overlay_accepts_pipeline_result(frame):
     assert result.shape == frame.shape
     assert not np.array_equal(result, original)
     assert np.array_equal(frame, original)
+
+
+def test_overlay_displays_state_without_modifying_input(frame):
+    original = frame.copy()
+
+    result = draw_overlay(
+        frame,
+        {},
+        {"knee_angle": 90, "reps": 2, "state": "bottom"},
+    )
+
+    assert result.shape == frame.shape
+    assert not np.array_equal(result, original)
+    assert np.array_equal(frame, original)
