@@ -1,8 +1,10 @@
-"""Coordinate exercise metrics and AI coaching feedback."""
+
+"""Coordinate exercise analysis and AI coaching feedback."""
 
 import math
 
 from ai.coaching_engine import CoachingEngine
+from analysis.exercise_analyzer import SquatAnalyzer, calculate_angle
 
 
 _coaching_engine = CoachingEngine()
@@ -12,20 +14,16 @@ def _normalize_metrics(metrics: dict) -> dict:
     """Support both legacy and current exercise metric names."""
     normalized = metrics.copy()
 
-    # Repetition count: current name takes precedence.
     if "repetitions" not in normalized and "reps" in normalized:
         normalized["repetitions"] = normalized["reps"]
 
-    # Movement state: current name takes precedence.
     if "movement_state" not in normalized and "state" in normalized:
         normalized["movement_state"] = normalized["state"]
 
-    # Knee angle: normalize the legacy field into the current schema.
     if "mean_knee" not in normalized and "angles" not in normalized:
         if "knee_angle" in normalized:
             normalized["mean_knee"] = normalized["knee_angle"]
 
-    # Mark an explicitly supplied invalid knee angle as unreliable.
     angle = normalized.get("mean_knee")
     if angle is None and isinstance(normalized.get("angles"), dict):
         angle = normalized["angles"].get("mean_knee")
@@ -56,3 +54,41 @@ def process_metrics(metrics: dict) -> dict:
         "metrics": safe_metrics,
         "feedback": feedback,
     }
+
+
+class CoachingPipeline:
+    """Coordinate squat analysis and AI coaching."""
+
+    def __init__(self):
+        self.analyzer = SquatAnalyzer()
+
+    def reset(self):
+        """Reset the exercise analyzer."""
+        self.analyzer.reset()
+
+    def process_landmarks(self, hip, knee, ankle) -> dict:
+        """Analyze landmarks and return metrics with coaching feedback."""
+        reps, state = self.analyzer.update_from_landmarks(
+            hip,
+            knee,
+            ankle,
+        )
+
+        knee_angle = None
+
+        if hip is not None and knee is not None and ankle is not None:
+            try:
+                knee_angle = calculate_angle(hip, knee, ankle)
+            except (TypeError, ValueError):
+                knee_angle = None
+
+        metrics = {
+            "knee_angle": knee_angle,
+            "reps": reps,
+            "state": state,
+        }
+
+        if knee_angle is None:
+            metrics["valid_measurement"] = False
+
+        return process_metrics(metrics)

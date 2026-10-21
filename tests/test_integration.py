@@ -1,6 +1,7 @@
+
 import unittest
 
-from integration.pipeline import process_metrics
+from integration.pipeline import CoachingPipeline, process_metrics
 
 
 class TestIntegrationPipeline(unittest.TestCase):
@@ -49,6 +50,58 @@ class TestIntegrationPipeline(unittest.TestCase):
             "state": "standing",
         })
 
+        self.assertEqual(
+            result["feedback"]["status"],
+            "measurement_unavailable",
+        )
+
+    def test_pipeline_initial_state(self):
+        pipeline = CoachingPipeline()
+
+        self.assertEqual(pipeline.analyzer.reps, 0)
+        self.assertEqual(pipeline.analyzer.state, "standing")
+
+    def test_pipeline_reset(self):
+        pipeline = CoachingPipeline()
+        pipeline.analyzer.reps = 3
+        pipeline.analyzer.state = "bottom"
+
+        pipeline.reset()
+
+        self.assertEqual(pipeline.analyzer.reps, 0)
+        self.assertEqual(pipeline.analyzer.state, "standing")
+
+    def test_process_landmarks_returns_result_structure(self):
+        pipeline = CoachingPipeline()
+
+        result = pipeline.process_landmarks(
+            hip=(0, 1),
+            knee=(0, 0),
+            ankle=(1, 0),
+        )
+
+        self.assertIn("metrics", result)
+        self.assertIn("feedback", result)
+
+        metrics = result["metrics"]
+
+        self.assertIn("knee_angle", metrics)
+        self.assertIn("reps", metrics)
+        self.assertIn("state", metrics)
+        self.assertIsInstance(metrics["reps"], int)
+        self.assertAlmostEqual(metrics["knee_angle"], 90.0)
+
+    def test_process_missing_landmarks(self):
+        pipeline = CoachingPipeline()
+
+        result = pipeline.process_landmarks(
+            hip=None,
+            knee=None,
+            ankle=None,
+        )
+
+        self.assertIsNone(result["metrics"]["knee_angle"])
+        self.assertFalse(result["metrics"]["valid_measurement"])
         self.assertEqual(
             result["feedback"]["status"],
             "measurement_unavailable",
