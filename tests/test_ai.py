@@ -1,27 +1,47 @@
 import unittest
 
-from ai.coach import generate_feedback
+from ai.coaching_engine import CoachingEngine
 
 
-class TestGenerateFeedback(unittest.TestCase):
+class TestCoachingEngine(unittest.TestCase):
+    def setUp(self):
+        self.engine = CoachingEngine()
+
     def test_empty_metrics(self):
-        self.assertEqual(generate_feedback({})["status"], "waiting")
+        result = self.engine.generate_feedback({})
+        self.assertEqual(result["status"], "general")
 
     def test_missing_angle(self):
-        self.assertEqual(generate_feedback({"reps": 2})["status"], "waiting")
+        result = self.engine.generate_feedback({
+            "repetitions": 2,
+        })
+        self.assertEqual(result["status"], "general")
+        self.assertEqual(result["repetitions"], 2)
 
-    def test_controlled_movement(self):
-        result = generate_feedback({"knee_angle": 90})
-        self.assertEqual(result["status"], "good")
+    def test_standing_feedback(self):
+        result = self.engine.generate_feedback({
+            "movement_state": "standing",
+            "angles": {"mean_knee": 170},
+        })
+        self.assertEqual(result["status"], "standing")
 
-    def test_low_angle_warning(self):
-        result = generate_feedback({"knee_angle": 60})
-        self.assertEqual(result["status"], "warning")
+    def test_low_knee_angle_gives_tip(self):
+        result = self.engine.generate_feedback({
+            "movement_state": "standing",
+            "angles": {"mean_knee": 120},
+        })
+        self.assertEqual(result["status"], "standing")
+        self.assertTrue(result["tips"])
 
-    def test_invalid_angle(self):
+    def test_invalid_angle_is_not_assessed(self):
+        result = self.engine.generate_feedback({
+            "movement_state": "standing",
+            "valid_measurement": False,
+            "angles": {"mean_knee": 200},
+        })
         self.assertEqual(
-            generate_feedback({"knee_angle": 200})["status"],
-            "waiting",
+            result["status"],
+            "measurement_unavailable",
         )
 
 
